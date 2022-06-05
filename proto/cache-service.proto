@@ -15,8 +15,6 @@ message GetRequest{
     string key = 1;
 }
 
-
-
 // Server Response
 message ServerResponse{
     bool success = 1;

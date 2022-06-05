@@ -6,13 +6,16 @@ import (
 	"net"
 
 	pb "cache-service/proto"
+	"cache-service/store"
 
 	"google.golang.org/grpc"
 )
 
 const (
-	port = ":50051"
+	port = ":5001"
 )
+
+var DB store.KVStore
 
 type RPCServer struct {
 	pb.UnimplementedCacheServiceServer
@@ -20,13 +23,21 @@ type RPCServer struct {
 
 // Get Method response
 func (s *RPCServer) Get(ctx context.Context, in *pb.GetRequest) (*pb.ServerResponse, error) {
-	log.Printf("Get: %v", in.GetKey())
-	return &pb.ServerResponse{Success: true, Value: in.GetKey(), Error: ""}, nil
+	value, err := DB.Get(in.GetKey())
+	if err != nil {
+		return &pb.ServerResponse{Success: false, Value: "", Error: err.Error()}, nil
+	}
+	log.Printf("[GET]%v", value)
+	return &pb.ServerResponse{Success: true, Value: value, Error: ""}, nil
 }
 
 // Set Method response
 func (s *RPCServer) Set(ctx context.Context, in *pb.SetRequest) (*pb.ServerResponse, error) {
-	log.Printf("Set: %s:[%s]", in.GetKey(), in.GetValue())
+	_, err := DB.Set(in.GetKey(), in.GetValue())
+	if err != nil {
+		return &pb.ServerResponse{Success: false, Value: "", Error: err.Error()}, nil
+	}
+	log.Printf("[SET]%s:%s", in.GetKey(), in.GetValue())
 	return &pb.ServerResponse{Success: true, Value: in.GetValue(), Error: ""}, nil
 }
 
@@ -36,6 +47,12 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
+
+	DB, err = store.CreateKVStore()
+	if err != nil {
+		log.Fatalf("Failed to create DB: %v", err)
+		panic(err)
+	}
 
 	pb.RegisterCacheServiceServer(grpcServer, &RPCServer{})
 	log.Printf("server listening at %v", lis.Addr())

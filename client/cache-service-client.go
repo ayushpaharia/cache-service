@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	address = "localhost:50051"
+	address = "localhost:5001"
 )
 
 func main() {
@@ -20,6 +20,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
+	log.Println("Connected to server")
 
 	defer conn.Close()
 	c := pb.NewCacheServiceClient(conn)
@@ -27,28 +28,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	var kvstore = make(map[string]string)
-	kvstore["key1"] = "value1"
-	kvstore["key2"] = "value2"
-
-	// for key, val := range kvstore {
-	// 	r, err := c.Get(ctx, &pb.GetRequest{Key: key})
-	// 	if err != nil {
-	// 		log.Fatalf("could not set: %v", err)
-	// 	}
-	// 	log.Printf("Key: %s, Value: %s", r.GetValue(), val)
-	// }
-	for key, val := range kvstore {
-		r, err := c.Set(ctx, &pb.SetRequest{Key: key, Value: val})
-		if err != nil {
-			log.Fatalf("could not set: %v", err)
-		}
-		log.Printf("Key: %s, Value: %s", r.GetValue(), val)
+	r, err := c.Set(ctx, &pb.SetRequest{Key: "key", Value: "value"})
+	if err != nil {
+		log.Fatalf("could not set: %v", err)
 	}
+	log.Printf("Key: %s, Value: %s", r.GetValue(), r.GetValue())
 
-	// r, err := c.Get(ctx, &pb.GetRequest{Key: "gRPC"})
-	// if err != nil {
-	// 	log.Fatalf("could not greet: %v", err)
-	// }
-	// log.Printf("Greeting: %s", r.Value)
 }
